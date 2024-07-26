@@ -17,7 +17,7 @@ require 'set'
 PROG = 'zfsnapr'
 VERSION = '0.2.0-pre'
 
-Options = Struct.new(:root, :pools, :excludes, :exec, :suid, :devfs, :tmpfs, :passthrough, keyword_init: true)
+Options = Struct.new(:root, :pools, :excludes, :exec, :suid, :devfs, :sysfs, :procfs, :tmpfs, :passthrough, keyword_init: true)
 options = Options.new(pools: Set.new, excludes: Set.new, tmpfs: Set.new, passthrough: Set.new)
 
 def ensure_path(path)
@@ -58,6 +58,14 @@ parser = OptionParser.new do |opts|
 
   opts.on('-D', '--devfs', 'Mount a /dev in the target') do
     options.devfs = true
+  end
+
+  opts.on('-S', '--sysfs', 'Mount a /sys in the target') do
+    options.sysfs = true
+  end
+
+  opts.on('-R', '--procfs', 'Mount a /proc in the target') do
+    options.procfs = true
   end
 
   opts.on('-T', '--tmpfs PATH', 'Mount a tmpfs on this path within the target') do |path|
@@ -280,6 +288,26 @@ module ZFS
           child_error("Error mounting devfs on #{mountpoint}")
         else
           warn('Dev mounting not supported on this platform')
+        end
+      end
+
+      if options.sysfs
+        mountpoint = File.join(target, 'sys')
+        mounts_store.call(mountpoint)
+        if RUBY_PLATFORM.include?('linux')
+          system(*(%w[mount --bind -o rw /sys] + [mountpoint]))
+          child_error("Error bind mounting /sys on #{mountpoint}")
+        else
+          warn('Sys mounting not supported on this platform')
+        end
+      end
+
+      if options.procfs
+        mountpoint = File.join(target, 'proc')
+        mounts_store.call(mountpoint)
+        if RUBY_PLATFORM.include?('linux')
+          system(*(%w[mount --bind -o rw /proc] + [mountpoint]))
+          child_error("Error bind mounting /proc on #{mountpoint}")
         end
       end
 
