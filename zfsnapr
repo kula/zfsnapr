@@ -60,7 +60,7 @@ parser = OptionParser.new do |opts|
     options.devfs = true
   end
 
-  opts.on('-S', '--sysfs', 'Mount a /sys in the target') do
+  opts.on('-y', '--sysfs', 'Mount a /sys in the target') do
     options.sysfs = true
   end
 
